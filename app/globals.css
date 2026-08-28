@@ -1,26 +1,93 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper: #f4ead8;
+  --paper-deep: #e8d7b8;
+  --ink: #2a2118;
+  --ink-soft: #5c4d3d;
+  --chili: #c4452d;
+  --chili-deep: #9a2f1c;
+  --turmeric: #e2a100;
+  --leaf: #2f5d3a;
+  --leaf-soft: #4a7c59;
+  --cream: #fffaf1;
+  --line: rgba(42, 33, 24, 0.12);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper: var(--paper);
+  --color-paper-deep: var(--paper-deep);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-chili: var(--chili);
+  --color-chili-deep: var(--chili-deep);
+  --color-turmeric: var(--turmeric);
+  --color-leaf: var(--leaf);
+  --color-leaf-soft: var(--leaf-soft);
+  --color-cream: var(--cream);
+  --color-line: var(--line);
+  --font-sans: var(--font-nunito);
+  --font-display: var(--font-fraunces);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+  background-image:
+    radial-gradient(1200px 600px at 10% -10%, rgba(226, 161, 0, 0.16), transparent 55%),
+    radial-gradient(900px 500px at 110% 0%, rgba(196, 69, 45, 0.1), transparent 50%);
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+}
+
+::selection {
+  background: rgba(226, 161, 0, 0.35);
+}
+
+@layer base {
+  button,
+  a,
+  [role="button"],
+  summary,
+  input[type="button"],
+  input[type="submit"],
+  label[for] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  a[aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}
+
+@keyframes deck-nudge {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  18% {
+    transform: translateX(-18px) rotate(-3deg);
+  }
+  36% {
+    transform: translateX(18px) rotate(3deg);
+  }
+  54% {
+    transform: translateX(-8px) rotate(-1.5deg);
+  }
+}
+
+.animate-deck-nudge {
+  animation: deck-nudge 1.5s ease-in-out 0.6s 1;
 }

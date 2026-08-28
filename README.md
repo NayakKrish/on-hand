@@ -1,36 +1,116 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# On Hand
 
-## Getting Started
+A dinner app for the moment you are already in the kitchen. You tap what is on the shelf, set tonight’s constraints, and swipe a deck of meals **walked from a kitchen graph** — ingredients, typed substitutes, techniques, flavor families, and regions — not keyword-matched recipes.
 
-First, run the development server:
+v1 is a focused Indian home-cooking graph (thin North + South). Built as a CognoDB / openCypher take-home: the interesting questions are about _connections_.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Why a graph database?
+
+A relational schema can list “dishes have ingredients.” It starts to strain when dinner is a **path**:
+
+- You are missing tamarind, but you have lemon, and lemon **can substitute** for tamarind _in souring_, not in every dish.
+- You named butter chicken; paneer butter masala is a **cousin** because they share a flavor family and a simmered-gravy technique, not because their names are similar.
+- Left-swipe “too familiar” should leave the **staple dishes in that family** and walk toward a different technique in the same region.
+
+Those are multi-hop traversals with typed edges. In SQL they become recursive joins plus a substitute table plus a family table plus special-case ranking. In CognoDB they are the data model.
+
+## Data model
+
+```mermaid
+flowchart LR
+  Dish -->|HAS_INGREDIENT| Ingredient
+  Ingredient -->|CAN_SUBSTITUTE| Ingredient
+  Dish -->|USES_TECHNIQUE| Technique
+  Dish -->|IN_FAMILY| FlavorFamily
+  Dish -->|FROM_REGION| Region
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`CAN_SUBSTITUTE` is directed and contextual: yogurt can stand in for cream in a makhani gravy; it cannot replace yogurt in curd rice by reversing the same edge blindly.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The **kitchen session** (pantry, leftover tags, time, diet, shop-one, bookmarks) lives in Redux + localStorage on this device. There is no auth. CognoDB is the source of truth for the graph only.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Setup
 
-## Learn More
+### 1. CognoDB Cloud
 
-To learn more about Next.js, take a look at the following resources:
+1. Sign up at [console.cognodb.com/signup](https://console.cognodb.com/signup).
+2. Create a free (c0) instance. Copy the `bolt+s://…` URI and the generated password for user `cognodb` (shown once).
+3. Keep the instance running so the hosted demo stays live.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 2. App
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm install
+cp .env.example .env.local
+```
 
-## Deploy on Vercel
+Fill in:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```env
+COGNODB_URI=bolt+s://<instance-id>.databases.cognodb.cloud
+COGNODB_USERNAME=cognodb
+COGNODB_PASSWORD=<your password>
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Never commit `.env.local`.
+
+```bash
+npm run seed
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). The first screen is a filled demo pantry. Edit it, optionally name a dish you loved, then **Find tonight**.
+
+### 3. Hosted demo (Vercel)
+
+Keep the CognoDB instance running until Wexa reviews. Hosting: Vercel — add the three env vars in the project settings, then deploy. Seed is run **locally** against CognoDB (`npm run seed`); you do not seed from Vercel.
+
+## Main queries
+
+All Cypher is parameterized via the official `neo4j-driver` (v6.2). No string-concatenated queries.
+
+**Makeable now, with a substitute hop (2+ hops).** For each required ingredient on a dish, we treat it as covered if it is in `$pantry` _or_ there is a `CAN_SUBSTITUTE` edge from a pantry ingredient to it:
+
+```cypher
+MATCH (d:Dish)-[:HAS_INGREDIENT]->(ing:Ingredient)
+OPTIONAL MATCH (ing)<-[:CAN_SUBSTITUTE]-(alt:Ingredient)
+WHERE alt.slug IN $pantry
+```
+
+That is the “sambar without tamarind, but lemon is on the shelf” path.
+
+**Cousin of a named dish (awkward in SQL).** From a seed dish we walk `IN_FAMILY` / `FROM_REGION` / `USES_TECHNIQUE` and rank other dishes by pantry coverage plus family overlap — name similarity is never used.
+
+**Left-swipe steer.** “Too heavy” drops `heaviness = rich`. “Too long” tightens `maxMinutes`. “Too familiar” downranks staples in the rejected flavor family and boosts cousins (same family, different technique).
+
+See `lib/cypher/` and `lib/ranking.ts`.
+
+## App map
+
+| Route          | What happens                                                                         |
+| -------------- | ------------------------------------------------------------------------------------ |
+| `/`            | Pantry (search + aisles), leftover tags, time / diet / shop-one, optional named dish |
+| `/tonight`     | Swipe deck with a visible graph reason on every card                                 |
+| `/dish/[slug]` | Have / missing / swap-with-why + short steps                                         |
+| `/saved`       | Session bookmarks on this device                                                     |
+
+## Stack
+
+- Next.js 16 App Router (Route Handlers, Node runtime — Bolt is not Edge-safe)
+- CognoDB via `neo4j-driver@6.2.0`
+- Redux Toolkit + redux-persist
+- Tailwind CSS 4
+
+## Screenshots
+
+Kitchen (demo pantry + constraints), including the CognoDB-down banner:
+
+![Kitchen](docs/kitchen.png)
+
+Tonight deck (error state when the graph is unreachable — after `npm run seed` this is a swipe stack):
+
+![Tonight](docs/tonight.png)
+
+Empty saved list:
+
+![Saved](docs/saved.png)
