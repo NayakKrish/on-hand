@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type PointerEvent } from "react";
+import { BusyStrip } from "@/components/skeleton";
 import type { DeckCard } from "@/lib/types";
 
 type Props = {
@@ -119,9 +120,7 @@ export function SwipeCard({
           ? ` · missing ${card.missing[0].name.toLowerCase()}`
           : ""}
       </p>
-      {busy ? (
-        <p className="mt-2 text-xs text-ink-soft">Finding the next cluster…</p>
-      ) : null}
+      {busy ? <BusyStrip /> : null}
 
       <p className="mt-4 text-center text-sm font-medium text-ink">
         Drag this card left or right

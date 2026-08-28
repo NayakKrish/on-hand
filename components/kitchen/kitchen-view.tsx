@@ -15,6 +15,7 @@ import { resetDeck, startFreshDeck } from "@/store/deckSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { resetPantry, toggleIngredient, toggleLeftover } from "@/store/pantrySlice";
 import { resetSaved } from "@/store/savedSlice";
+import { DishSearchSkeleton, KitchenPantrySkeleton } from "@/components/skeleton";
 
 const AISLES: Array<Aisle | "all"> = ["all", "produce", "dairy", "spices", "staples", "fridge"];
 const AISLE_PAGE = 12;
@@ -80,6 +81,7 @@ export function KitchenView() {
   const [dishHits, setDishHits] = useState<{ slug: string; name: string; gloss: string; family: string | null }[]>(
     [],
   );
+  const [dishSearching, setDishSearching] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -100,8 +102,14 @@ export function KitchenView() {
     if (q.length < 1) return;
     const handle = setTimeout(() => {
       searchDishes(q)
-        .then(setDishHits)
-        .catch(() => setDishHits([]));
+        .then((hits) => {
+          setDishHits(hits);
+          setDishSearching(false);
+        })
+        .catch(() => {
+          setDishHits([]);
+          setDishSearching(false);
+        });
     }, 180);
     return () => clearTimeout(handle);
   }, [dishQuery]);
@@ -198,9 +206,7 @@ export function KitchenView() {
             </button>
           ))}
         </div>
-        {catalog.length === 0 && !loadError ? (
-          <p className="text-sm text-ink-soft">Loading the spice aisle…</p>
-        ) : null}
+        {catalog.length === 0 && !loadError ? <KitchenPantrySkeleton /> : null}
         {matches.length === 0 && catalog.length > 0 ? (
           <p className="text-sm text-ink-soft">No ingredients match that search.</p>
         ) : null}
@@ -331,11 +337,21 @@ export function KitchenView() {
           <div>
             <input
               value={dishQuery}
-              onChange={(e) => setDishQuery(e.target.value)}
+              onChange={(e) => {
+                const next = e.target.value;
+                setDishQuery(next);
+                if (next.trim().length < 1) {
+                  setDishHits([]);
+                  setDishSearching(false);
+                } else {
+                  setDishSearching(true);
+                }
+              }}
               placeholder="Butter chicken, sambar…"
               className="w-full rounded-2xl border border-line bg-cream px-4 py-3 outline-none ring-turmeric/40 focus:ring-2"
             />
-            {dishQuery.trim().length > 0 && dishHits.length > 0 ? (
+            {dishSearching ? <DishSearchSkeleton /> : null}
+            {!dishSearching && dishQuery.trim().length > 0 && dishHits.length > 0 ? (
               <ul className="mt-2 overflow-hidden rounded-2xl bg-cream">
                 {dishHits.map((dish) => (
                   <li key={dish.slug}>
@@ -346,6 +362,7 @@ export function KitchenView() {
                         dispatch(setNamedDish({ slug: dish.slug, name: dish.name }));
                         setDishQuery("");
                         setDishHits([]);
+                        setDishSearching(false);
                       }}
                     >
                       <span className="block font-medium">{dish.name}</span>

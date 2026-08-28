@@ -7,6 +7,7 @@ import { postDishDetail } from "@/lib/client-api";
 import { DIET_LABELS, type DishDetail } from "@/lib/types";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { toggleSaved } from "@/store/savedSlice";
+import { DishSkeleton } from "@/components/skeleton";
 
 export function DishView() {
   const params = useParams<{ slug: string }>();
@@ -43,8 +44,8 @@ export function DishView() {
     );
   }
 
-  if (!dish) {
-    return <div className="rounded-3xl bg-cream p-10 text-center text-ink-soft">Reading the dish…</div>;
+  if (!dish || dish.slug !== slug) {
+    return <DishSkeleton />;
   }
 
   const isSaved = saved.some((item) => item.slug === dish.slug);

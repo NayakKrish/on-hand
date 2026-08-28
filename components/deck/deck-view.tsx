@@ -16,6 +16,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { addIngredient } from "@/store/pantrySlice";
 import { toggleSaved } from "@/store/savedSlice";
+import { DeckSkeleton } from "@/components/skeleton";
 import { DockCard, SwipeCard } from "./swipe-card";
 
 const REASONS: { id: SteerReason; label: string; hint: string }[] = [
@@ -137,11 +138,7 @@ export function DeckView() {
         </p>
       </div>
 
-      {deck.status === "loading" && !top ? (
-        <div className="flex h-105 items-center justify-center rounded-3xl bg-cream text-ink-soft">
-          Walking the kitchen graph…
-        </div>
-      ) : null}
+      {deck.status === "loading" && !top ? <DeckSkeleton /> : null}
 
       {deck.status === "error" ? (
         <div className="rounded-3xl bg-cream p-6 text-chili-deep">

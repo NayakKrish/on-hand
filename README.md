@@ -61,6 +61,12 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). The first screen is a filled demo pantry. Edit it, optionally name a dish you loved, then **Find tonight**.
 
+To re-record the walkthrough in `docs/demo.webm` (dev server must be running):
+
+```bash
+npm run record
+```
+
 ### 3. Hosted demo (Vercel)
 
 Keep the CognoDB instance running until Wexa reviews. Hosting: Vercel — add the three env vars in the project settings, then deploy. Seed is run **locally** against CognoDB (`npm run seed`); you do not seed from Vercel.
@@ -101,16 +107,10 @@ See `lib/cypher/` and `lib/ranking.ts`.
 - Redux Toolkit + redux-persist
 - Tailwind CSS 4
 
-## Screenshots
+## Demo
 
-Kitchen (demo pantry + constraints), including the CognoDB-down banner:
+Playwright recording of the live app: pantry (search + aisles), optional “cousin of butter chicken,” the swipe deck, a dish with have/swap/steps, then Saved.
 
-![Kitchen](docs/kitchen.png)
+![On Hand demo](docs/demo.gif)
 
-Tonight deck (error state when the graph is unreachable — after `npm run seed` this is a swipe stack):
-
-![Tonight](docs/tonight.png)
-
-Empty saved list:
-
-![Saved](docs/saved.png)
+Source recording: [docs/demo.webm](docs/demo.webm). Regenerate with `npm run record` while `npm run dev` is running.
